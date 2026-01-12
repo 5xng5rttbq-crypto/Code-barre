@@ -1,8 +1,10 @@
 import streamlit as st
-from barcode import EAN13, Code39
+from barcode import EAN13
 from barcode.writer import ImageWriter
 from PIL import Image
 import hashlib
+import treepoem
+from io import BytesIO
 
 # ================= CONFIG =================
 st.set_page_config(
@@ -52,10 +54,6 @@ body, .stApp { background-color: #ffffff; color: #005baa; }
     justify-content: center;
 }
 .stTextInput>div>div>input { color: #005baa; }
-button.print-btn {
-    background-color:#005baa;color:white;padding:10px 20px;
-    border:none;border-radius:8px;margin-top:10px;cursor:pointer;
-}
 /* Impression carte bancaire */
 @media print {
     body * { visibility: hidden; }
@@ -113,39 +111,36 @@ st.markdown('</div>', unsafe_allow_html=True)
 # -------- COLONNE DROITE : CARTE FIDÉLITÉ -----------
 st.markdown('<div class="column">', unsafe_allow_html=True)
 st.markdown('<div class="section">', unsafe_allow_html=True)
-st.subheader("💳 Carte fidélité avec Code39")
+st.subheader("💳 Carte fidélité – 19 chiffres (Code128 via treepoem)")
 
-ean39_input = st.text_input("Code carte fidélité – 19 chiffres", placeholder="Ex : 0371234567890123456", key="ean39")
+card_code = st.text_input("Code carte fidélité – 19 chiffres", placeholder="Ex : 0371234567890123456", key="card_code")
 
 if st.button("Générer la carte"):
-    if not ean39_input:
+    if not card_code:
         st.error("Veuillez entrer un code de 19 chiffres")
-    elif len(ean39_input) != 19 or not ean39_input.isdigit():
+    elif len(card_code) != 19 or not card_code.isdigit():
         st.error("Le code doit contenir exactement 19 chiffres")
     else:
-        # Génération code-barres Code39
-        code39 = Code39(
-            ean39_input,
-            writer=ImageWriter()
+        # Génération code-barres via treepoem (Code128)
+        barcode = treepoem.generate_barcode(
+            barcode_type='code128',
+            data=card_code,
+            options={"includetext": "yes", "height": "50"}  # 50 pixels ~1,5-2cm
         )
-        code39.save("code39_card", options={
-            "write_text": True,      # chiffres visibles en dessous
-            "background": "white",
-            "foreground": "black",
-            "module_width": 0.2,
-            "module_height": 50
-        })
-        barcode_img = Image.open("code39_card.png")
+        buf = BytesIO()
+        barcode.convert("1").save(buf, format="PNG")
+        buf.seek(0)
+        barcode_img = Image.open(buf)
 
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.markdown('<div class="card print-card">', unsafe_allow_html=True)
         st.image(barcode_img, width=260)
         st.markdown('</div></div>', unsafe_allow_html=True)
 
-        # Télécharger pour impression (mobile et PC)
+        # Télécharger pour impression
         st.download_button(
             label="📥 Télécharger la carte pour impression",
-            data=open("code39_card.png", "rb").read(),
+            data=buf.getvalue(),
             file_name="carte_fidelite.png",
             mime="image/png"
         )
