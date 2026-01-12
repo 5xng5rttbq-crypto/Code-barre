@@ -14,7 +14,7 @@ st.set_page_config(
 
 # ================= AUTH =================
 USERNAME = "11"
-PASSWORD_HASH = hashlib.sha256("luky".encode()).hexdigest()
+PASSWORD_HASH = hashlib.sha256("lukyann".encode()).hexdigest()
 if "auth" not in st.session_state:
     st.session_state.auth = False
 
@@ -28,7 +28,9 @@ if not st.session_state.auth:
     if st.button("Connexion"):
         if check_login(u, p):
             st.session_state.auth = True
-            st.experimental_rerun()
+            # STOP pour éviter l'erreur rerun sur Streamlit Cloud
+            st.success("Connexion réussie ! Actualisez la page si nécessaire.")
+            st.stop()
         else:
             st.error("Identifiants incorrects")
     st.stop()
@@ -112,14 +114,14 @@ if st.button("Générer la carte"):
             "foreground": "black",
             "module_width": 0.35,
             "module_height": 120,   
-            "font_size": 12   # réduit la taille des chiffres
+            "font_size": 12   # taille réduite des chiffres
         })
 
         barcode_img = Image.open("code128_card.png")
 
         # ROGNER LE HAUT : garder uniquement la partie basse avec chiffres
         width, height = barcode_img.size
-        crop_top = int(height * 0.6)  # garder les 40% du bas
+        crop_top = int(height * 0.6)
         cropped_img = barcode_img.crop((0, crop_top, width, height))
 
         # REDUIRE DE 2× pour aperçu compact
