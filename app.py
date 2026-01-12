@@ -112,7 +112,7 @@ st.markdown('<div class="section">', unsafe_allow_html=True)
 st.subheader("💳 Carte fidélité – Code128")
 
 card_code = st.text_input(
-    "Code carte fidélité – chiffres libres (pas de limite)",
+    "Code carte fidélité – chiffres libres (19 ou plus)",
     placeholder="Ex : 0371234567890123456", key="card_code"
 )
 
@@ -125,14 +125,15 @@ if st.button("Générer la carte"):
             card_code,
             writer=ImageWriter()
         )
+        # Options : texte complet visible, pas de checksum, largeur ajustée
         code128.save("code128_card", options={
             "write_text": True,        # texte complet visible
             "add_checksum": False,     # aucun caractère supplémentaire
             "background": "white",
             "foreground": "black",
-            "module_width": 0.25,     # légèrement plus large pour tous les chiffres
-            "module_height": 50,      # ~1,5-2cm
-            "font_size": 12            # texte lisible
+            "module_width": 0.25,     # largeur ajustée pour que tous les chiffres rentrent
+            "module_height": 50,      # hauteur ~1,5-2 cm
+            "font_size": 12            # texte lisible sous le code-barres
         })
         barcode_img = Image.open("code128_card.png")
 
