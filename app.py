@@ -93,7 +93,7 @@ body, .stApp {
 # ================= LOGO EN HAUT =================
 st.markdown("""
 <div class="logo-top-left">
-    <img src="carrefour_logo.png" width="120">
+    <img src="carrefour_logo.PNG" width="120">
 </div>
 """, unsafe_allow_html=True)
 
