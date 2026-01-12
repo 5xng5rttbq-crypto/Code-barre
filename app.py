@@ -1,18 +1,17 @@
 import streamlit as st
 from barcode import EAN13, Code128
 from barcode.writer import ImageWriter
-from PIL import Image
+from PIL import Image, ImageOps
 import hashlib
-import re
 
-# ================= CONFIG PAGE =================
+# ================= CONFIG =================
 st.set_page_config(
     page_title="Outil privé – Codes-barres Carrefour",
     page_icon="🔒",
     layout="wide"
 )
 
-# ================= AUTHENTIFICATION =================
+# ================= AUTH =================
 USERNAME = "11"
 PASSWORD_HASH = hashlib.sha256("5.1178.58.1289.589".encode()).hexdigest()
 
@@ -58,26 +57,37 @@ body, .stApp {
     color: #005baa;
 }
 
+.card-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+}
+
 .card {
     width: 340px;
     height: 215px;
-    background: linear-gradient(135deg, #005baa, #003b7a);
+    background: #ffffff;
+    border: 3px solid red; /* contour rouge */
     border-radius: 16px;
     padding: 16px;
-    color: white;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .barcode-box {
     background: white;
     padding: 10px;
     border-radius: 8px;
-    margin-top: 25px;
-    color: black;
 }
 
 .stTextInput>div>div>input {
     color: #005baa;
+}
+
+button.css-1emrehy.edgvbvh3 {  /* bouton bleu */
+    background-color: #005baa !important;
+    color: white !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -103,7 +113,6 @@ def solve_ean13(code):
             break
     else:
         return None
-
     for n in range(10):
         test = list(code)
         test[pos] = str(n)
@@ -115,14 +124,10 @@ def solve_ean13(code):
 # ================= PAGE =================
 st.title("🛒 Outil privé – Codes-barres")
 
-# -------- SECTION 1 : EAN-13 -----------
+# --------- SECTION 1 : EAN-13 -----------
 st.markdown('<div class="section">', unsafe_allow_html=True)
 st.subheader("🔢 Calcul du chiffre manquant – EAN-13")
-
-ean13_input = st.text_input(
-    "Code EAN-13 avec chiffre manquant (ex : 3521X4900218)",
-    max_chars=13
-)
+ean13_input = st.text_input("Code EAN-13 avec chiffre manquant (ex : 3521X4900218)", max_chars=13)
 
 if st.button("Calculer le code EAN-13"):
     result = solve_ean13(ean13_input)
@@ -130,49 +135,39 @@ if st.button("Calculer le code EAN-13"):
         st.success(f"Code EAN-13 valide : {result}")
         ean = EAN13(result, writer=ImageWriter())
         ean.save("ean13_result", options={"write_text": True, "background": "white", "foreground": "black"})
-        barcode_image = Image.open("ean13_result.png")
-        st.image(barcode_image)
+        st.image("ean13_result.png")
     else:
         st.error("Code invalide ou impossible à résoudre")
-
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------- SECTION 2 : CARTE FIDÉLITÉ -----------
+# --------- SECTION 2 : CARTE FIDÉLITÉ -----------
 st.markdown('<div class="section">', unsafe_allow_html=True)
 st.subheader("💳 Génération carte de fidélité (EAN-128)")
 
-ean128_input = st.text_input(
-    "Code EAN-128 (GS1-128) à afficher sur la carte",
-    placeholder="Ex : ]C10103712345678901"
-)
+ean128_input = st.text_input("Code EAN-128 (GS1-128) à afficher sur la carte", placeholder="Ex : ]C10103712345678901")
 
 if st.button("Générer la carte"):
     if not ean128_input:
         st.error("Veuillez entrer un code EAN-128")
     else:
         # Génération du code-barres EAN-128
-        code128 = Code128(
-            ean128_input,
-            writer=ImageWriter()
-        )
-        code128.save("ean128_card", options={
-            "write_text": False,  # pas de texte sous le code-barres
+        code128 = Code128(ean128_input, writer=ImageWriter())
+        filename = code128.save("ean128_card", options={
+            "write_text": False,
             "background": "white",
             "foreground": "black",
             "module_width": 0.2,
-            "module_height": 15
+            "module_height": 40
         })
 
-        # Affichage de la carte
+        # Ouvrir et centrer le code-barres dans une carte blanche avec contour rouge
+        barcode_img = Image.open("ean128_card.png")
+        st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.image("logo_carrefour.PNG", width=90)
-        st.markdown('<div class="barcode-box">', unsafe_allow_html=True)
-        barcode_image = Image.open("ean128_card.png")
-        st.image(barcode_image, width=260)
+        st.image(barcode_img, width=260)
         st.markdown('</div></div>', unsafe_allow_html=True)
 
         st.info("🖨️ Impression : échelle 100 % – format carte bancaire")
-
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ================= LOGOUT =================
