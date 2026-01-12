@@ -6,7 +6,7 @@ import hashlib
 
 # ================= CONFIG =================
 st.set_page_config(
-    page_title="Outil privé – Codes-barres Carrefour",
+    page_title="Outil privé – Codes-barres",
     page_icon="🔒",
     layout="wide"
 )
@@ -14,6 +14,7 @@ st.set_page_config(
 # ================= AUTH =================
 USERNAME = "11"
 PASSWORD_HASH = hashlib.sha256("5.1178.58.1289.589".encode()).hexdigest()
+
 if "auth" not in st.session_state:
     st.session_state.auth = False
 
@@ -37,13 +38,17 @@ st.markdown("""
 <style>
 body, .stApp { background-color: #ffffff; color: #005baa; }
 
-.logo-top-left { position: fixed; top: 10px; left: 10px; z-index: 9999; }
+.section {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+    color: #005baa;
+}
 
-.section { background: #ffffff; padding: 20px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.1); color: #005baa; }
+.columns-container { display: flex; flex-wrap: wrap; gap: 20px; }
 
-.columns-container { display: flex; justify-content: space-between; gap: 20px; }
-
-.column { flex: 1; }
+.column { flex: 1; min-width: 300px; }
 
 .card-container { display: flex; justify-content: center; margin-top: 15px; }
 
@@ -61,24 +66,18 @@ body, .stApp { background-color: #ffffff; color: #005baa; }
 
 .stTextInput>div>div>input { color: #005baa; }
 
+button.print-btn {
+    background-color:#005baa;color:white;padding:10px 20px;
+    border:none;border-radius:8px;margin-top:10px;cursor:pointer;
+}
+
 /* Impression carte bancaire */
 @media print {
     body * { visibility: hidden; }
     .print-card, .print-card * { visibility: visible; }
     .print-card { position: absolute; top: 0; left: 0; width: 85.6mm; height: 54mm; margin: 0; padding: 0; }
 }
-button.print-btn {
-    background-color:#005baa;color:white;padding:10px 20px;
-    border:none;border-radius:8px;margin-top:10px;cursor:pointer;
-}
 </style>
-""", unsafe_allow_html=True)
-
-# ================= LOGO =================
-st.markdown("""
-<div class="logo-top-left">
-    <img src="logo_carrefour.PNG" width="120">
-</div>
 """, unsafe_allow_html=True)
 
 # ================= LOGIQUE EAN13 =================
@@ -108,7 +107,7 @@ st.title("🛒 Outil privé – Codes-barres")
 
 st.markdown('<div class="columns-container">', unsafe_allow_html=True)
 
-# --------- COLONNE GAUCHE : EAN-13 -----------
+# -------- COLONNE GAUCHE : EAN-13 -----------
 st.markdown('<div class="column">', unsafe_allow_html=True)
 st.markdown('<div class="section">', unsafe_allow_html=True)
 st.subheader("🔢 Calcul du chiffre manquant – EAN-13")
@@ -128,7 +127,7 @@ if st.button("Calculer le code EAN-13"):
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --------- COLONNE DROITE : CARTE FIDÉLITÉ -----------
+# -------- COLONNE DROITE : CARTE FIDÉLITÉ -----------
 st.markdown('<div class="column">', unsafe_allow_html=True)
 st.markdown('<div class="section">', unsafe_allow_html=True)
 st.subheader("💳 Carte fidélité avec EAN-128")
@@ -140,13 +139,17 @@ if st.button("Générer la carte"):
         st.error("Veuillez entrer un code EAN-128")
     else:
         # Génération code-barres EAN-128
-        code128 = Code128(ean128_input, writer=ImageWriter())
+        code128 = Code128(
+            ean128_input,
+            writer=ImageWriter()
+        )
+        # Hauteur ~50px = 1,5cm environ, module_height ajuste la hauteur des barres
         code128.save("ean128_card", options={
-            "write_text": False,
+            "write_text": True,    # chiffre visible en dessous
             "background": "white",
             "foreground": "black",
             "module_width": 0.2,
-            "module_height": 40
+            "module_height": 50
         })
         barcode_img = Image.open("ean128_card.png")
 
@@ -155,10 +158,13 @@ if st.button("Générer la carte"):
         st.image(barcode_img, width=260)
         st.markdown('</div></div>', unsafe_allow_html=True)
 
-        # Bouton d'impression
-        st.markdown("""
-        <button class="print-btn" onclick="window.print()">🖨️ Imprimer la carte</button>
-        """, unsafe_allow_html=True)
+        # Télécharger pour impression (fonctionne sur mobile et PC)
+        st.download_button(
+            label="📥 Télécharger la carte pour impression",
+            data=open("ean128_card.png", "rb").read(),
+            file_name="carte_fidelite.png",
+            mime="image/png"
+        )
 
 st.markdown('</div>', unsafe_allow_html=True)  # fin colonne droite
 st.markdown('</div>', unsafe_allow_html=True)  # fin container
