@@ -38,31 +38,11 @@ if not st.session_state.auth:
 # ================= STYLE =================
 st.markdown("""
 <style>
-/* Fond bleu Carrefour pour toute la page */
-body, .stApp { 
-    background-color: #005baa;  /* bleu Carrefour */
-    color: #000000;              /* texte noir par défaut */
-}
-
-/* Sections avec fond blanc pour contraste */
-.section { 
-    background: #ffffff; 
-    padding: 20px; 
-    border-radius: 14px; 
-    box-shadow: 0 4px 14px rgba(0,0,0,0.1); 
-    color: #000000;
-}
-
-/* Colonnes flexibles */
+body, .stApp { background-color: #ffffff; color: #005baa; }
+.section { background: #ffffff; padding: 20px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.1); color: #005baa; }
 .columns-container { display: flex; flex-wrap: wrap; gap: 20px; }
 .column { flex: 1; min-width: 300px; }
-
-/* Input et textarea conservent leur couleur de texte par défaut (interactifs) */
-.stTextInput>div>div>input,
-.stTextArea>div>div>textarea,
-.stButton>button {
-    color: initial; /* bleu par défaut Streamlit pour interagir */
-}
+.stTextInput>div>div>input { color: #005baa; }
 </style>
 """, unsafe_allow_html=True)
 
