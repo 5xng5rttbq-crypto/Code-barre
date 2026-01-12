@@ -143,9 +143,9 @@ if st.button("Générer la carte"):
             for y in range(card_height):
                 if x < 3 or x >= card_width-3 or y < 3 or y >= card_height-3:
                     card_canvas.putpixel((x,y), (255,0,0))
-        # Centrer horizontalement, placer en haut pour voir chiffres
+        # Centrer horizontalement, placer en haut pour que les chiffres soient visibles
         barcode_x = (card_width - barcode_img.width)//2
-        barcode_y = 20  # padding depuis le haut pour voir le code-barres + chiffres
+        barcode_y = 5  # code-barres très proche du haut
         card_canvas.paste(barcode_img, (barcode_x, barcode_y))
 
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
