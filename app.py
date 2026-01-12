@@ -128,13 +128,13 @@ if st.button("Générer la carte"):
             "add_checksum": False,
             "background": "white",
             "foreground": "black",
-            "module_width": 0.3,  # plus large pour que les chiffres rentrent
-            "module_height": 50,
+            "module_width": 0.3,
+            "module_height": 90,  # ~3 cm pour voir chiffres + code-barres
             "font_size": 14
         })
         barcode_img = Image.open("code128_card.png")
 
-        # Ajuster la largeur de la carte si nécessaire
+        # Ajuster largeur de la carte si nécessaire
         card_width = max(340, barcode_img.width + 40)
         card_height = 215
         card_canvas = Image.new("RGB", (card_width, card_height), "white")
