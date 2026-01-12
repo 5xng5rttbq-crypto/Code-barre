@@ -111,8 +111,8 @@ if st.button("Générer la carte"):
             "background": "white",
             "foreground": "black",
             "module_width": 0.35,
-            "module_height": 120,   # hauteur totale pour générer
-            "font_size": 18
+            "module_height": 120,   
+            "font_size": 12   # réduit la taille des chiffres
         })
 
         barcode_img = Image.open("code128_card.png")
@@ -127,7 +127,6 @@ if st.button("Générer la carte"):
         new_height = (height - crop_top) // 2
         cropped_img_small = cropped_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-        st.subheader("Aperçu compact de la carte fidélité (2× plus petit)")
         st.image(cropped_img_small)
 
         # Télécharger pour impression
