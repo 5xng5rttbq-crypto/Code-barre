@@ -1,10 +1,8 @@
 import streamlit as st
-from barcode import EAN13
+from barcode import EAN13, Code128
 from barcode.writer import ImageWriter
 from PIL import Image
 import hashlib
-import treepoem
-from io import BytesIO
 
 # ================= CONFIG =================
 st.set_page_config(
@@ -111,7 +109,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 # -------- COLONNE DROITE : CARTE FIDÉLITÉ -----------
 st.markdown('<div class="column">', unsafe_allow_html=True)
 st.markdown('<div class="section">', unsafe_allow_html=True)
-st.subheader("💳 Carte fidélité – 19 chiffres (Code128 via treepoem)")
+st.subheader("💳 Carte fidélité – 19 chiffres (Code128)")
 
 card_code = st.text_input("Code carte fidélité – 19 chiffres", placeholder="Ex : 0371234567890123456", key="card_code")
 
@@ -121,16 +119,21 @@ if st.button("Générer la carte"):
     elif len(card_code) != 19 or not card_code.isdigit():
         st.error("Le code doit contenir exactement 19 chiffres")
     else:
-        # Génération code-barres via treepoem (Code128)
-        barcode = treepoem.generate_barcode(
-            barcode_type='code128',
-            data=card_code,
-            options={"includetext": "yes", "height": "50"}  # 50 pixels ~1,5-2cm
+        # Génération code-barres Code128 avec python-barcode
+        code128 = Code128(
+            card_code,
+            writer=ImageWriter()
         )
-        buf = BytesIO()
-        barcode.convert("1").save(buf, format="PNG")
-        buf.seek(0)
-        barcode_img = Image.open(buf)
+        # Options : texte complet visible, pas de checksum, module_width/height pour adapter la taille
+        code128.save("code128_card", options={
+            "write_text": True,
+            "add_checksum": False,
+            "background": "white",
+            "foreground": "black",
+            "module_width": 0.2,
+            "module_height": 50  # ~1,5-2cm
+        })
+        barcode_img = Image.open("code128_card.png")
 
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.markdown('<div class="card print-card">', unsafe_allow_html=True)
@@ -140,7 +143,7 @@ if st.button("Générer la carte"):
         # Télécharger pour impression
         st.download_button(
             label="📥 Télécharger la carte pour impression",
-            data=buf.getvalue(),
+            data=open("code128_card.png", "rb").read(),
             file_name="carte_fidelite.png",
             mime="image/png"
         )
