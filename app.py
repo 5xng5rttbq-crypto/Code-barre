@@ -1,12 +1,12 @@
 import streamlit as st
-from barcode import EAN13, Code128
+from barcode import EAN13, Code39
 from barcode.writer import ImageWriter
 from PIL import Image
 import hashlib
 
 # ================= CONFIG =================
 st.set_page_config(
-    page_title="Outil privé – Codes-barres Carrefour",
+    page_title="Outil privé – Codes-barres",
     page_icon="🔒",
     layout="wide"
 )
@@ -113,40 +113,39 @@ st.markdown('</div>', unsafe_allow_html=True)
 # -------- COLONNE DROITE : CARTE FIDÉLITÉ -----------
 st.markdown('<div class="column">', unsafe_allow_html=True)
 st.markdown('<div class="section">', unsafe_allow_html=True)
-st.subheader("💳 Carte fidélité avec EAN-128")
+st.subheader("💳 Carte fidélité avec Code39")
 
-ean128_input = st.text_input("Code EAN-128 (GS1-128) – 19 chiffres", placeholder="Ex : 0371234567890123456", key="ean128")
+ean39_input = st.text_input("Code carte fidélité – 19 chiffres", placeholder="Ex : 0371234567890123456", key="ean39")
 
 if st.button("Générer la carte"):
-    if not ean128_input:
-        st.error("Veuillez entrer un code EAN-128 de 19 chiffres")
-    elif len(ean128_input) != 19 or not ean128_input.isdigit():
+    if not ean39_input:
+        st.error("Veuillez entrer un code de 19 chiffres")
+    elif len(ean39_input) != 19 or not ean39_input.isdigit():
         st.error("Le code doit contenir exactement 19 chiffres")
     else:
-        # Génération code-barres EAN-128 19 chiffres
-        code128 = Code128(
-            ean128_input,
+        # Génération code-barres Code39
+        code39 = Code39(
+            ean39_input,
             writer=ImageWriter()
         )
-        code128.save("ean128_card", options={
-            "write_text": True,        # texte complet visible sous le code-barres
-            "add_checksum": False,     # ne pas modifier le code fourni
+        code39.save("code39_card", options={
+            "write_text": True,      # chiffres visibles en dessous
             "background": "white",
             "foreground": "black",
             "module_width": 0.2,
             "module_height": 50
         })
-        barcode_img = Image.open("ean128_card.png")
+        barcode_img = Image.open("code39_card.png")
 
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.markdown('<div class="card print-card">', unsafe_allow_html=True)
         st.image(barcode_img, width=260)
         st.markdown('</div></div>', unsafe_allow_html=True)
 
-        # Télécharger pour impression (fonctionne sur mobile et PC)
+        # Télécharger pour impression (mobile et PC)
         st.download_button(
             label="📥 Télécharger la carte pour impression",
-            data=open("ean128_card.png", "rb").read(),
+            data=open("code39_card.png", "rb").read(),
             file_name="carte_fidelite.png",
             mime="image/png"
         )
