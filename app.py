@@ -6,7 +6,7 @@ import hashlib
 
 # ================= CONFIG =================
 st.set_page_config(
-    page_title="Outil privé – Codes-barres",
+    page_title="Outil privé – Codes-barres Carrefour",
     page_icon="🔒",
     layout="wide"
 )
@@ -38,20 +38,12 @@ st.markdown("""
 <style>
 body, .stApp { background-color: #ffffff; color: #005baa; }
 
-.section {
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 14px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
-    color: #005baa;
-}
+.section { background: #ffffff; padding: 20px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.1); color: #005baa; }
 
 .columns-container { display: flex; flex-wrap: wrap; gap: 20px; }
-
 .column { flex: 1; min-width: 300px; }
 
 .card-container { display: flex; justify-content: center; margin-top: 15px; }
-
 .card {
     width: 340px;
     height: 215px;
@@ -104,7 +96,6 @@ def solve_ean13(code):
 
 # ================= PAGE =================
 st.title("🛒 Outil privé – Codes-barres")
-
 st.markdown('<div class="columns-container">', unsafe_allow_html=True)
 
 # -------- COLONNE GAUCHE : EAN-13 -----------
@@ -143,9 +134,10 @@ if st.button("Générer la carte"):
             ean128_input,
             writer=ImageWriter()
         )
-        # Hauteur ~50px = 1,5cm environ, module_height ajuste la hauteur des barres
+        # Hauteur du code-barres ~50px = 1,5–2 cm, texte visible
         code128.save("ean128_card", options={
-            "write_text": True,    # chiffre visible en dessous
+            "write_text": True,        # chiffres visibles sous le code-barres
+            "add_checksum": False,     # ne pas modifier le code fourni
             "background": "white",
             "foreground": "black",
             "module_width": 0.2,
@@ -158,7 +150,7 @@ if st.button("Générer la carte"):
         st.image(barcode_img, width=260)
         st.markdown('</div></div>', unsafe_allow_html=True)
 
-        # Télécharger pour impression (fonctionne sur mobile et PC)
+        # Télécharger la carte pour impression (mobile et PC)
         st.download_button(
             label="📥 Télécharger la carte pour impression",
             data=open("ean128_card.png", "rb").read(),
