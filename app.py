@@ -2,6 +2,7 @@ import streamlit as st
 from barcode import EAN13, Code128
 from barcode.writer import ImageWriter
 from PIL import Image
+from io import BytesIO
 import hashlib
 
 # ================= CONFIG =================
@@ -112,7 +113,7 @@ st.markdown('<div class="section">', unsafe_allow_html=True)
 st.subheader("💳 Carte fidélité – Code128")
 
 card_code = st.text_input(
-    "Code carte fidélité – chiffres libres (19 ou plus)",
+    "Code carte fidélité – chiffres libres",
     placeholder="Ex : 0371234567890123456", key="card_code"
 )
 
@@ -121,31 +122,43 @@ if st.button("Générer la carte"):
         st.error("Veuillez entrer uniquement des chiffres")
     else:
         # Génération code-barres Code128
-        code128 = Code128(
-            card_code,
-            writer=ImageWriter()
-        )
-        # Options : texte complet visible, pas de checksum, largeur ajustée
+        code128 = Code128(card_code, writer=ImageWriter())
         code128.save("code128_card", options={
-            "write_text": True,        # texte complet visible
-            "add_checksum": False,     # aucun caractère supplémentaire
+            "write_text": True,
+            "add_checksum": False,
             "background": "white",
             "foreground": "black",
-            "module_width": 0.25,     # largeur ajustée pour que tous les chiffres rentrent
-            "module_height": 50,      # hauteur ~1,5-2 cm
-            "font_size": 12            # texte lisible sous le code-barres
+            "module_width": 0.3,  # plus large pour que les chiffres rentrent
+            "module_height": 50,
+            "font_size": 14
         })
         barcode_img = Image.open("code128_card.png")
 
+        # Ajuster la largeur de la carte si nécessaire
+        card_width = max(340, barcode_img.width + 40)
+        card_height = 215
+        card_canvas = Image.new("RGB", (card_width, card_height), "white")
+        # Bordure rouge
+        for x in range(card_width):
+            for y in range(card_height):
+                if x < 3 or x >= card_width-3 or y < 3 or y >= card_height-3:
+                    card_canvas.putpixel((x,y), (255,0,0))
+        # Centrer le code-barres
+        barcode_x = (card_width - barcode_img.width)//2
+        barcode_y = (card_height - barcode_img.height)//2
+        card_canvas.paste(barcode_img, (barcode_x, barcode_y))
+
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.markdown('<div class="card print-card">', unsafe_allow_html=True)
-        st.image(barcode_img, width=280)
+        st.image(card_canvas)
         st.markdown('</div></div>', unsafe_allow_html=True)
 
         # Télécharger pour impression
+        output_buffer = BytesIO()
+        card_canvas.save(output_buffer, format="PNG")
         st.download_button(
             label="📥 Télécharger la carte pour impression",
-            data=open("code128_card.png", "rb").read(),
+            data=output_buffer.getvalue(),
             file_name="carte_fidelite.png",
             mime="image/png"
         )
@@ -156,4 +169,4 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ================= LOGOUT =================
 if st.button("Se déconnecter"):
     st.session_state.auth = False
-    st.stop()  # stable sur Streamlit Cloud
+    st.stop()
