@@ -125,7 +125,7 @@ if st.button("Générer la carte"):
         # REDUIRE DE 2× pour aperçu compact
         new_width = width // 2
         new_height = (height - crop_top) // 2
-        cropped_img_small = cropped_img.resize((new_width, new_height), Image.ANTIALIAS)
+        cropped_img_small = cropped_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
         st.subheader("Aperçu compact de la carte fidélité (2× plus petit)")
         st.image(cropped_img_small)
