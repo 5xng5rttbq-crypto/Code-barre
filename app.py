@@ -9,7 +9,7 @@ import hashlib
 st.set_page_config(
     page_title="Outil privé – Codes-barres Carrefour",
     page_icon="🔒",
-    layout="wide"  # plus d'espace horizontal pour logo
+    layout="wide"
 )
 
 # ================= AUTH =================
@@ -45,12 +45,11 @@ if not st.session_state.auth:
 # ================= STYLE =================
 st.markdown("""
 <style>
-/* Page blanche */
 body, .stApp {
     background-color: #ffffff;
+    color: #005baa;  /* Texte bleu Carrefour */
 }
 
-/* Logo en haut à gauche */
 .logo-top-left {
     position: fixed;
     top: 10px;
@@ -58,16 +57,15 @@ body, .stApp {
     z-index: 9999;
 }
 
-/* Section blanche avec ombre */
 .section {
     background: #ffffff;
     padding: 20px;
     border-radius: 14px;
     box-shadow: 0 4px 14px rgba(0,0,0,0.1);
     margin-bottom: 30px;
+    color: #005baa;
 }
 
-/* Carte fidélité */
 .card {
     width: 340px;
     height: 215px;
@@ -83,6 +81,11 @@ body, .stApp {
     padding: 10px;
     border-radius: 8px;
     margin-top: 25px;
+    color: black;
+}
+
+.stTextInput>div>div>input {
+    color: #005baa;
 }
 </style>
 """, unsafe_allow_html=True)
