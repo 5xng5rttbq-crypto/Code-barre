@@ -14,7 +14,7 @@ st.set_page_config(
 
 # ================= AUTH =================
 USERNAME = "11"
-PASSWORD_HASH = hashlib.sha256("5.1178.58.1289.589".encode()).hexdigest()
+PASSWORD_HASH = hashlib.sha256("luky".encode()).hexdigest()
 if "auth" not in st.session_state:
     st.session_state.auth = False
 
