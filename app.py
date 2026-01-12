@@ -49,7 +49,7 @@ body, .stApp { background-color: #ffffff; color: #005baa; }
     border-radius: 16px;
     padding: 16px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;  /* alignement en haut pour voir chiffres */
     justify-content: center;
 }
 .stTextInput>div>div>input { color: #005baa; }
@@ -129,7 +129,7 @@ if st.button("Générer la carte"):
             "background": "white",
             "foreground": "black",
             "module_width": 0.3,
-            "module_height": 90,  # ~3 cm pour voir chiffres + code-barres
+            "module_height": 90,  # 3cm pour code-barres + chiffres
             "font_size": 14
         })
         barcode_img = Image.open("code128_card.png")
@@ -143,9 +143,9 @@ if st.button("Générer la carte"):
             for y in range(card_height):
                 if x < 3 or x >= card_width-3 or y < 3 or y >= card_height-3:
                     card_canvas.putpixel((x,y), (255,0,0))
-        # Centrer le code-barres
+        # Centrer horizontalement, placer en haut pour voir chiffres
         barcode_x = (card_width - barcode_img.width)//2
-        barcode_y = (card_height - barcode_img.height)//2
+        barcode_y = 20  # padding depuis le haut pour voir le code-barres + chiffres
         card_canvas.paste(barcode_img, (barcode_x, barcode_y))
 
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
