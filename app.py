@@ -109,35 +109,36 @@ st.markdown('</div>', unsafe_allow_html=True)
 # -------- COLONNE DROITE : CARTE FIDÉLITÉ -----------
 st.markdown('<div class="column">', unsafe_allow_html=True)
 st.markdown('<div class="section">', unsafe_allow_html=True)
-st.subheader("💳 Carte fidélité – 19 chiffres (Code128)")
+st.subheader("💳 Carte fidélité – Code128")
 
-card_code = st.text_input("Code carte fidélité – 19 chiffres", placeholder="Ex : 0371234567890123456", key="card_code")
+card_code = st.text_input(
+    "Code carte fidélité – chiffres libres (pas de limite)",
+    placeholder="Ex : 0371234567890123456", key="card_code"
+)
 
 if st.button("Générer la carte"):
-    if not card_code:
-        st.error("Veuillez entrer un code de 19 chiffres")
-    elif len(card_code) != 19 or not card_code.isdigit():
-        st.error("Le code doit contenir exactement 19 chiffres")
+    if not card_code or not card_code.isdigit():
+        st.error("Veuillez entrer uniquement des chiffres")
     else:
-        # Génération code-barres Code128 avec python-barcode
+        # Génération code-barres Code128
         code128 = Code128(
             card_code,
             writer=ImageWriter()
         )
-        # Options : texte complet visible, pas de checksum, module_width/height pour adapter la taille
         code128.save("code128_card", options={
-            "write_text": True,
-            "add_checksum": False,
+            "write_text": True,        # texte complet visible
+            "add_checksum": False,     # aucun caractère supplémentaire
             "background": "white",
             "foreground": "black",
-            "module_width": 0.2,
-            "module_height": 50  # ~1,5-2cm
+            "module_width": 0.25,     # légèrement plus large pour tous les chiffres
+            "module_height": 50,      # ~1,5-2cm
+            "font_size": 12            # texte lisible
         })
         barcode_img = Image.open("code128_card.png")
 
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.markdown('<div class="card print-card">', unsafe_allow_html=True)
-        st.image(barcode_img, width=260)
+        st.image(barcode_img, width=280)
         st.markdown('</div></div>', unsafe_allow_html=True)
 
         # Télécharger pour impression
@@ -154,4 +155,4 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ================= LOGOUT =================
 if st.button("Se déconnecter"):
     st.session_state.auth = False
-    st.experimental_rerun()
+    st.stop()  # stable sur Streamlit Cloud
