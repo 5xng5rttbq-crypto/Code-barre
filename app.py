@@ -110,24 +110,29 @@ if st.button("Générer la carte"):
             "add_checksum": False,
             "background": "white",
             "foreground": "black",
-            "module_width": 0.35,   # largeur module
-            "module_height": 120,   # hauteur totale
+            "module_width": 0.35,
+            "module_height": 120,   # hauteur totale pour générer
             "font_size": 18
         })
 
         barcode_img = Image.open("code128_card.png")
 
-        # ROGNER LE HAUT : garder uniquement la partie basse avec les chiffres
+        # ROGNER LE HAUT : garder uniquement la partie basse avec chiffres
         width, height = barcode_img.size
         crop_top = int(height * 0.6)  # garder les 40% du bas
         cropped_img = barcode_img.crop((0, crop_top, width, height))
 
-        st.subheader("Aperçu compact de la carte fidélité")
-        st.image(cropped_img)
+        # REDUIRE DE 2× pour aperçu compact
+        new_width = width // 2
+        new_height = (height - crop_top) // 2
+        cropped_img_small = cropped_img.resize((new_width, new_height), Image.ANTIALIAS)
+
+        st.subheader("Aperçu compact de la carte fidélité (2× plus petit)")
+        st.image(cropped_img_small)
 
         # Télécharger pour impression
         output_buffer = BytesIO()
-        cropped_img.save(output_buffer, format="PNG")
+        cropped_img_small.save(output_buffer, format="PNG")
         st.download_button(
             label="📥 Télécharger la carte pour impression",
             data=output_buffer.getvalue(),
