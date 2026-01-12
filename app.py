@@ -14,7 +14,6 @@ st.set_page_config(
 # ================= AUTH =================
 USERNAME = "11"
 PASSWORD_HASH = hashlib.sha256("5.1178.58.1289.589".encode()).hexdigest()
-
 if "auth" not in st.session_state:
     st.session_state.auth = False
 
@@ -37,12 +36,9 @@ if not st.session_state.auth:
 st.markdown("""
 <style>
 body, .stApp { background-color: #ffffff; color: #005baa; }
-
 .section { background: #ffffff; padding: 20px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.1); color: #005baa; }
-
 .columns-container { display: flex; flex-wrap: wrap; gap: 20px; }
 .column { flex: 1; min-width: 300px; }
-
 .card-container { display: flex; justify-content: center; margin-top: 15px; }
 .card {
     width: 340px;
@@ -55,14 +51,11 @@ body, .stApp { background-color: #ffffff; color: #005baa; }
     align-items: center;
     justify-content: center;
 }
-
 .stTextInput>div>div>input { color: #005baa; }
-
 button.print-btn {
     background-color:#005baa;color:white;padding:10px 20px;
     border:none;border-radius:8px;margin-top:10px;cursor:pointer;
 }
-
 /* Impression carte bancaire */
 @media print {
     body * { visibility: hidden; }
@@ -102,7 +95,6 @@ st.markdown('<div class="columns-container">', unsafe_allow_html=True)
 st.markdown('<div class="column">', unsafe_allow_html=True)
 st.markdown('<div class="section">', unsafe_allow_html=True)
 st.subheader("🔢 Calcul du chiffre manquant – EAN-13")
-
 ean13_input = st.text_input("Code EAN-13 avec chiffre manquant (ex : 3521X4900218)", max_chars=13, key="ean13")
 
 if st.button("Calculer le code EAN-13"):
@@ -123,20 +115,21 @@ st.markdown('<div class="column">', unsafe_allow_html=True)
 st.markdown('<div class="section">', unsafe_allow_html=True)
 st.subheader("💳 Carte fidélité avec EAN-128")
 
-ean128_input = st.text_input("Code EAN-128 (GS1-128) à afficher sur la carte", placeholder="Ex : ]C10103712345678901", key="ean128")
+ean128_input = st.text_input("Code EAN-128 (GS1-128) – 19 chiffres", placeholder="Ex : 0371234567890123456", key="ean128")
 
 if st.button("Générer la carte"):
     if not ean128_input:
-        st.error("Veuillez entrer un code EAN-128")
+        st.error("Veuillez entrer un code EAN-128 de 19 chiffres")
+    elif len(ean128_input) != 19 or not ean128_input.isdigit():
+        st.error("Le code doit contenir exactement 19 chiffres")
     else:
-        # Génération code-barres EAN-128
+        # Génération code-barres EAN-128 19 chiffres
         code128 = Code128(
             ean128_input,
             writer=ImageWriter()
         )
-        # Hauteur du code-barres ~50px = 1,5–2 cm, texte visible
         code128.save("ean128_card", options={
-            "write_text": True,        # chiffres visibles sous le code-barres
+            "write_text": True,        # texte complet visible sous le code-barres
             "add_checksum": False,     # ne pas modifier le code fourni
             "background": "white",
             "foreground": "black",
@@ -150,7 +143,7 @@ if st.button("Générer la carte"):
         st.image(barcode_img, width=260)
         st.markdown('</div></div>', unsafe_allow_html=True)
 
-        # Télécharger la carte pour impression (mobile et PC)
+        # Télécharger pour impression (fonctionne sur mobile et PC)
         st.download_button(
             label="📥 Télécharger la carte pour impression",
             data=open("ean128_card.png", "rb").read(),
@@ -158,8 +151,8 @@ if st.button("Générer la carte"):
             mime="image/png"
         )
 
-st.markdown('</div>', unsafe_allow_html=True)  # fin colonne droite
-st.markdown('</div>', unsafe_allow_html=True)  # fin container
+st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ================= LOGOUT =================
 if st.button("Se déconnecter"):
