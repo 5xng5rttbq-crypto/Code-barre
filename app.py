@@ -36,14 +36,24 @@ if not st.session_state.auth:
 st.markdown("""
 <style>
 body, .stApp {
-    background-color: #005baa;
-    color: #000000;
+    background-color: white;
+    color: #005baa;
 }
-.section {
-    background: white;
-    padding: 20px;
-    border-radius: 14px;
-    margin-bottom: 20px;
+
+h1, h2, h3, h4, h5 {
+    color: #005baa;
+}
+
+label, .stMarkdown {
+    color: #005baa;
+}
+
+/* Supprime tout effet de "carte" */
+div[data-testid="stVerticalBlock"] > div {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 0 16px 0 !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -86,7 +96,6 @@ def open_image_new_tab(img):
 st.title("🛒 Outil privé – Codes-barres")
 
 # ---------- EAN13 MANQUANT ----------
-st.markdown('<div class="section">', unsafe_allow_html=True)
 st.subheader("🔢 Calcul chiffre manquant – EAN13")
 ean_input = st.text_input("Code avec chiffre manquant (ex : 3521X4900218)")
 if st.button("Calculer"):
@@ -97,10 +106,8 @@ if st.button("Calculer"):
         st.image("ean13_calc.png")
     else:
         st.error("Impossible de résoudre")
-st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------- CARTE FIDÉLITÉ ----------
-st.markdown('<div class="section">', unsafe_allow_html=True)
 st.subheader("💳 Carte fidélité")
 card_code = st.text_input("Code carte fidélité (chiffres)")
 if st.button("Générer carte"):
@@ -119,10 +126,8 @@ if st.button("Générer carte"):
         st.markdown(open_image_new_tab(img), unsafe_allow_html=True)
     else:
         st.error("Chiffres uniquement")
-st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------- ARTICLES AU POIDS ----------
-st.markdown('<div class="section">', unsafe_allow_html=True)
 st.subheader("⚖️ Article au poids (EAN13)")
 
 if "articles" not in st.session_state:
@@ -158,8 +163,6 @@ if st.button("Générer code article"):
     st.success(f"EAN13 : {code}")
     EAN13(code, writer=ImageWriter()).save("ean_poids")
     st.image("ean_poids.png")
-
-st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------- LOGOUT ----------
 if st.button("Se déconnecter"):
