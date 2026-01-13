@@ -35,25 +35,44 @@ if not st.session_state.auth:
 # ================= STYLE =================
 st.markdown("""
 <style>
+/* Fond général */
 body, .stApp {
     background-color: white;
     color: #005baa;
 }
 
+/* Titres */
 h1, h2, h3, h4, h5 {
     color: #005baa;
 }
 
+/* Labels & texte */
 label, .stMarkdown {
     color: #005baa;
 }
 
-/* Supprime tout effet de "carte" */
+/* Radio buttons (Prix connu / Poids x prix/kg) */
+div[role="radiogroup"] label {
+    color: #005baa !important;
+    font-weight: 500;
+}
+
+/* Champs de saisie */
+input, textarea {
+    background-color: #f2f2f2 !important;
+    color: #005baa !important;
+    border-radius: 6px !important;
+}
+
+/* Placeholders (exemples) */
+input::placeholder, textarea::placeholder {
+    color: #e6e6e6 !important;
+}
+
+/* Supprime effet cartes */
 div[data-testid="stVerticalBlock"] > div {
     background: transparent !important;
     border: none !important;
-    padding: 0 !important;
-    margin: 0 0 16px 0 !important;
 }
 </style>
 """, unsafe_allow_html=True)
