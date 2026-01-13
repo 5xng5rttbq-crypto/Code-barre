@@ -4,22 +4,20 @@ from barcode.writer import ImageWriter
 from PIL import Image
 from io import BytesIO
 import hashlib
+import base64
 
 # ================= CONFIG =================
-st.set_page_config(
-    page_title="Outil privé – Codes-barres",
-    page_icon="🔒",
-    layout="wide"
-)
+st.set_page_config(page_title="Outil privé – Codes-barres", layout="wide")
 
 # ================= AUTH =================
 USERNAME = "11"
-PASSWORD_HASH = hashlib.sha256("lukyann".encode()).hexdigest()
+PASSWORD_HASH = hashlib.sha256("11".encode()).hexdigest()
+
 if "auth" not in st.session_state:
     st.session_state.auth = False
 
-def check_login(user, pwd):
-    return user == USERNAME and hashlib.sha256(pwd.encode()).hexdigest() == PASSWORD_HASH
+def check_login(u, p):
+    return u == USERNAME and hashlib.sha256(p.encode()).hexdigest() == PASSWORD_HASH
 
 if not st.session_state.auth:
     st.title("🔐 Accès privé")
@@ -28,8 +26,7 @@ if not st.session_state.auth:
     if st.button("Connexion"):
         if check_login(u, p):
             st.session_state.auth = True
-            # STOP pour éviter l'erreur rerun sur Streamlit Cloud
-            st.success("Connexion réussie ! Actualisez la page si nécessaire.")
+            st.success("Connecté. Recharge la page si nécessaire.")
             st.stop()
         else:
             st.error("Identifiants incorrects")
@@ -38,20 +35,25 @@ if not st.session_state.auth:
 # ================= STYLE =================
 st.markdown("""
 <style>
-body, .stApp { background-color: #ffffff; color: #005baa; }
-.section { background: #ffffff; padding: 20px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.1); color: #005baa; }
-.columns-container { display: flex; flex-wrap: wrap; gap: 20px; }
-.column { flex: 1; min-width: 300px; }
-.stTextInput>div>div>input { color: #005baa; }
+body, .stApp {
+    background-color: #005baa;
+    color: #000000;
+}
+.section {
+    background: white;
+    padding: 20px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# ================= LOGIQUE EAN13 =================
+# ================= FONCTIONS =================
 def checksum_ean13(code12):
     total = 0
     for i, c in enumerate(code12):
         total += int(c) if i % 2 == 0 else int(c) * 3
-    return (10 - (total % 10)) % 10
+    return (10 - total % 10) % 10
 
 def solve_ean13(code):
     for i, c in enumerate(code):
@@ -64,87 +66,102 @@ def solve_ean13(code):
         test = list(code)
         test[pos] = str(n)
         test = "".join(test)
-        if len(test) == 13 and checksum_ean13(test[:12]) == int(test[12]):
+        if checksum_ean13(test[:12]) == int(test[12]):
             return test
     return None
 
+def euro_to_francs(e):
+    return round(e * 6.55957, 2)
+
+def francs_5_digits(f):
+    return f"{int(round(f * 100)):05d}"
+
+def open_image_new_tab(img):
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    b64 = base64.b64encode(buf.getvalue()).decode()
+    return f'<a href="data:image/png;base64,{b64}" target="_blank">🖨️ Ouvrir l’image pour impression</a>'
+
 # ================= PAGE =================
 st.title("🛒 Outil privé – Codes-barres")
-st.markdown('<div class="columns-container">', unsafe_allow_html=True)
 
-# -------- COLONNE GAUCHE : EAN-13 -----------
-st.markdown('<div class="column">', unsafe_allow_html=True)
+# ---------- EAN13 MANQUANT ----------
 st.markdown('<div class="section">', unsafe_allow_html=True)
-st.subheader("🔢 Calcul du chiffre manquant – EAN-13")
-ean13_input = st.text_input("Code EAN-13 avec chiffre manquant (ex : 3521X4900218)", max_chars=13, key="ean13")
-
-if st.button("Calculer le code EAN-13"):
-    result = solve_ean13(ean13_input)
-    if result:
-        st.success(f"Code EAN-13 valide : {result}")
-        ean = EAN13(result, writer=ImageWriter())
-        ean.save("ean13_result", options={"write_text": True, "background": "white", "foreground": "black"})
-        st.image("ean13_result.png")
+st.subheader("🔢 Calcul chiffre manquant – EAN13")
+ean_input = st.text_input("Code avec chiffre manquant (ex : 3521X4900218)")
+if st.button("Calculer"):
+    res = solve_ean13(ean_input)
+    if res:
+        st.success(res)
+        EAN13(res, writer=ImageWriter()).save("ean13_calc")
+        st.image("ean13_calc.png")
     else:
-        st.error("Code invalide ou impossible à résoudre")
-
-st.markdown('</div>', unsafe_allow_html=True)
+        st.error("Impossible de résoudre")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# -------- COLONNE DROITE : CARTE FIDÉLITÉ -----------
-st.markdown('<div class="column">', unsafe_allow_html=True)
+# ---------- CARTE FIDÉLITÉ ----------
 st.markdown('<div class="section">', unsafe_allow_html=True)
-st.subheader("💳 Carte fidélité – Code128")
-
-card_code = st.text_input(
-    "Code carte fidélité – chiffres libres",
-    placeholder="Ex : 0371234567890123456", key="card_code"
-)
-
-if st.button("Générer la carte"):
-    if not card_code or not card_code.isdigit():
-        st.error("Veuillez entrer uniquement des chiffres")
-    else:
-        # Génération code-barres Code128
-        code128 = Code128(card_code, writer=ImageWriter())
-        code128.save("code128_card", options={
+st.subheader("💳 Carte fidélité")
+card_code = st.text_input("Code carte fidélité (chiffres)")
+if st.button("Générer carte"):
+    if card_code.isdigit():
+        code = Code128(card_code, writer=ImageWriter())
+        code.save("card", options={
             "write_text": True,
-            "add_checksum": False,
-            "background": "white",
-            "foreground": "black",
-            "module_width": 0.35,
-            "module_height": 120,   
-            "font_size": 12   # taille réduite des chiffres
+            "font_size": 12,
+            "module_height": 120
         })
-
-        barcode_img = Image.open("code128_card.png")
-
-        # ROGNER LE HAUT : garder uniquement la partie basse avec chiffres
-        width, height = barcode_img.size
-        crop_top = int(height * 0.6)
-        cropped_img = barcode_img.crop((0, crop_top, width, height))
-
-        # REDUIRE DE 2× pour aperçu compact
-        new_width = width // 2
-        new_height = (height - crop_top) // 2
-        cropped_img_small = cropped_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-        st.image(cropped_img_small)
-
-        # Télécharger pour impression
-        output_buffer = BytesIO()
-        cropped_img_small.save(output_buffer, format="PNG")
-        st.download_button(
-            label="📥 Télécharger la carte pour impression",
-            data=output_buffer.getvalue(),
-            file_name="carte_fidelite.png",
-            mime="image/png"
-        )
-
-st.markdown('</div>', unsafe_allow_html=True)
+        img = Image.open("card.png")
+        w, h = img.size
+        img = img.crop((0, int(h * 0.6), w, h))
+        img = img.resize((w // 2, h // 4), Image.Resampling.LANCZOS)
+        st.image(img)
+        st.markdown(open_image_new_tab(img), unsafe_allow_html=True)
+    else:
+        st.error("Chiffres uniquement")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ================= LOGOUT =================
+# ---------- ARTICLES AU POIDS ----------
+st.markdown('<div class="section">', unsafe_allow_html=True)
+st.subheader("⚖️ Article au poids (EAN13)")
+
+if "articles" not in st.session_state:
+    st.session_state.articles = {}
+
+name = st.text_input("Nom de l’article (ex : raisin)")
+prefix = st.text_input("Préfixe article (7 chiffres)")
+
+if st.button("Enregistrer article"):
+    if prefix.isdigit() and len(prefix) == 7:
+        st.session_state.articles[name] = prefix
+        st.success("Article enregistré")
+    else:
+        st.error("Préfixe invalide")
+
+article = st.selectbox("Articles enregistrés", [""] + list(st.session_state.articles.keys()))
+if article:
+    prefix = st.session_state.articles[article]
+
+mode = st.radio("Méthode de prix", ["Prix connu", "Poids × prix/kg"])
+
+if mode == "Prix connu":
+    prix = st.number_input("Prix (€)", min_value=0.0, step=0.01)
+else:
+    poids = st.number_input("Poids (kg)", min_value=0.0, step=0.001)
+    prixkg = st.number_input("Prix/kg (€)", min_value=0.0, step=0.01)
+    prix = poids * prixkg
+
+if st.button("Générer code article"):
+    francs = euro_to_francs(prix)
+    base = prefix + francs_5_digits(francs)
+    code = base + str(checksum_ean13(base))
+    st.success(f"EAN13 : {code}")
+    EAN13(code, writer=ImageWriter()).save("ean_poids")
+    st.image("ean_poids.png")
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------- LOGOUT ----------
 if st.button("Se déconnecter"):
     st.session_state.auth = False
     st.stop()
