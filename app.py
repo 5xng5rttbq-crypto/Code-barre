@@ -83,16 +83,19 @@ articles = load_articles()
 st.title("🛒 Outil privé – Codes-barres")
 
 # ---------- CARTE FIDÉLITÉ ----------
+# ---------- CARTE FIDÉLITÉ ----------
 st.subheader("💳 Carte fidélité")
 
 card_code = st.text_input("Code carte fidélité (chiffres uniquement)")
 
 if st.button("Générer la carte fidélité"):
     if card_code.isdigit():
+        # Génération du code-barres avec chiffres plus petits
         barcode = Code128(card_code, writer=ImageWriter())
         barcode.save("card_raw", options={
             "write_text": True,
-            "font_size": 14,
+            "font_size": 9,          # 🔽 chiffres plus petits
+            "text_distance": 4,      # 🔽 rapproche les chiffres du code-barres
             "module_height": 120,
             "quiet_zone": 10
         })
@@ -100,10 +103,10 @@ if st.button("Générer la carte fidélité"):
         img = Image.open("card_raw.png")
         w, h = img.size
 
-        # Rognage contrôlé : chiffres entièrement visibles
+        # Rognage doux : garder tout le bas du code-barres et chiffres
         left = int(w * 0.02)
         right = int(w * 0.98)
-        top = int(h * 0.55)
+        top = int(h * 0.55)      # on garde plus de haut pour inclure chiffres
         bottom = h
 
         img = img.crop((left, top, right, bottom))
@@ -114,6 +117,7 @@ if st.button("Générer la carte fidélité"):
 
         img.save("card_final.png")
 
+        # Affichage + ouverture dans un nouvel onglet pour impression
         st.image("card_final.png")
         st.markdown(
             '<a href="card_final.png" target="_blank">🖨️ Ouvrir l’image pour impression</a>',
@@ -121,8 +125,6 @@ if st.button("Générer la carte fidélité"):
         )
     else:
         st.error("Le code doit contenir uniquement des chiffres")
-
-st.divider()
 
 # ---------- ARTICLES AU POIDS ----------
 st.subheader("⚖️ Articles au poids – EAN13")
