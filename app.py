@@ -37,8 +37,19 @@ if not st.session_state.auth:
 st.markdown("""
 <style>
 body, .stApp { background-color: white; color: #005baa; }
-input, textarea { background-color: #f2f2f2 !important; color: #005baa !important; border-radius:6px !important;}
-input::placeholder { color:#005baa !important; opacity:0.6;}
+/* Labels, textes et exemples en bleu */
+label, span, p, div, .stNumberInput, .stTextInput, .stTextArea, div[role="radiogroup"] label {
+    color: #005baa !important;
+    font-weight: 500;
+}
+/* Champs de saisie */
+input, textarea {
+    background-color: #f2f2f2 !important;
+    color: #005baa !important;
+    border-radius:6px !important;
+}
+/* Placeholder légèrement grisé */
+input::placeholder { color:#005baa !important; opacity:0.6; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -106,20 +117,12 @@ card_code = st.text_input("Code carte fidélité (chiffres uniquement)")
 
 if st.button("Générer la carte fidélité"):
     if card_code.isdigit():
-        # Générer le code barre avec Code128
-        barcode = Code128(
-            card_code,
-            writer=ImageWriter()
-        )
+        # Génération code barre en mémoire
+        barcode = Code128(card_code, writer=ImageWriter())
         barcode_buffer = io.BytesIO()
-        # Réduire légèrement la police pour que les chiffres tiennent
-        barcode.write(
-            barcode_buffer,
-            {"write_text": True, "font_size": 7, "text_distance": 3, "module_height": 120}
-        )
+        barcode.write(barcode_buffer, {"write_text": True, "font_size": 7, "text_distance": 3, "module_height": 120})
         barcode_buffer.seek(0)
 
-        # Charger image avec PIL
         img = Image.open(barcode_buffer)
         w, h = img.size
         left = int(w * 0.02)
@@ -129,17 +132,17 @@ if st.button("Générer la carte fidélité"):
         img = img.crop((left, top, right, bottom))
         img = img.resize((int(img.width * 0.6), int(img.height * 0.6)))
 
-        # Afficher l'image dans l'app
+        # Affichage dans l'app
         st.image(img)
 
-        # Convertir image en bytes pour téléchargement
+        # Convertir en bytes pour téléchargement
         img_bytes = io.BytesIO()
         img.save(img_bytes, format="PNG")
         img_bytes = img_bytes.getvalue()
 
-        # Petit texte d'instruction pour imprimer
+        # Instruction pour l'impression
         st.markdown(
-            "<small>Pour imprimer la carte, vous pouvez faire glisser l'image sur la barre d'adresse ou clic droit → ouvrir dans un nouvel onglet.</small>",
+            "<small>Pour imprimer la carte de fidélité : faites glisser l'image sur la barre d'adresse ou clic droit → ouvrir l'image dans un nouvel onglet.</small>",
             unsafe_allow_html=True
         )
 
@@ -153,33 +156,35 @@ if st.button("Générer la carte fidélité"):
     else:
         st.error("Le code doit contenir uniquement des chiffres")
 
+st.divider()
+
 # ----- Articles au poids -----
 st.subheader("⚖️ Articles au poids – EAN13")
 article_name = st.text_input("Nom de l’article (ex: raisin)")
 article_prefix = st.text_input("Préfixe article (7 chiffres)")
 
 if st.button("Enregistrer / Mettre à jour l’article"):
-    if article_prefix.isdigit() and len(article_prefix)==7:
+    if article_prefix.isdigit() and len(article_prefix) == 7:
         articles[article_name] = article_prefix
         save_articles(articles)
         st.success("Article enregistré (ou remplacé)")
     else:
         st.error("Le préfixe doit contenir exactement 7 chiffres")
 
-article_selected = st.selectbox("Articles enregistrés", [""]+sorted(articles.keys()))
+article_selected = st.selectbox("Articles enregistrés", [""] + sorted(articles.keys()))
 if article_selected:
     article_prefix = articles[article_selected]
 
-mode = st.radio("Méthode de calcul du prix", ["Prix connu","Poids × prix au kilo"])
-if mode=="Prix connu":
+mode = st.radio("Méthode de calcul du prix", ["Prix connu", "Poids × prix au kilo"])
+if mode == "Prix connu":
     price = st.number_input("Prix total (€)", min_value=0.0, step=0.01)
 else:
     weight = st.number_input("Poids (kg)", min_value=0.0, step=0.001)
     price_kg = st.number_input("Prix au kilo (€)", min_value=0.0, step=0.01)
-    price = weight*price_kg
+    price = weight * price_kg
 
 if st.button("Générer le code article au poids"):
-    if article_prefix and price>0:
+    if article_prefix and price > 0:
         francs = euro_to_francs(price)
         base_code = article_prefix + francs_5_digits(francs)
         ean13 = base_code + str(checksum_ean13(base_code))
