@@ -5,6 +5,8 @@ from PIL import Image
 import hashlib
 import json
 import os
+import io
+import base64
 
 # ================= CONFIG =================
 st.set_page_config(page_title="Outil privé – Codes-barres", layout="wide")
@@ -121,34 +123,33 @@ if st.button("Générer la carte fidélité"):
         barcode = Code128(card_code, writer=ImageWriter())
         barcode.save("card_raw", options={
             "write_text": True,
-            "font_size": 9,          # chiffres plus petits
-            "text_distance": 4,      # rapproche les chiffres du code-barres
+            "font_size": 9,
+            "text_distance": 4,
             "module_height": 120,
             "quiet_zone": 10
         })
 
         img = Image.open("card_raw.png")
         w, h = img.size
-
-        # Rognage doux : garder tous les chiffres
         left = int(w * 0.02)
         right = int(w * 0.98)
         top = int(h * 0.55)
         bottom = h
-
         img = img.crop((left, top, right, bottom))
-        img = img.resize(
-            (int(img.width * 0.6), int(img.height * 0.6)),
-            Image.Resampling.LANCZOS
-        )
+        img = img.resize((int(img.width * 0.6), int(img.height * 0.6)), Image.Resampling.LANCZOS)
 
-        img.save("card_final.png")
+        # Convertir image en base64 pour lien ouvrable
+        buffered = io.BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
 
-        # ✅ Lien pour ouvrir dans un nouvel onglet
-        st.markdown(
-            '<a href="card_final.png" target="_blank"><img src="card_final.png" width="300"><br>🖨️ Ouvrir l’image pour impression</a>',
-            unsafe_allow_html=True
-        )
+        # Affichage dans l'app
+        st.image(img)
+
+        # Lien ouvrable dans un nouvel onglet
+        href = f'<a href="data:image/png;base64,{img_str}" target="_blank">🖨️ Ouvrir l’image pour impression</a>'
+        st.markdown(href, unsafe_allow_html=True)
+
     else:
         st.error("Le code doit contenir uniquement des chiffres")
 
