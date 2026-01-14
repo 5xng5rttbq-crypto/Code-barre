@@ -2,16 +2,12 @@ import streamlit as st
 from barcode import EAN13, Code128
 from barcode.writer import ImageWriter
 from PIL import Image
-import hashlib
-import io
-import json
-import requests
-import base64
+import hashlib, io, json, requests, base64
 
 # ================= CONFIG =================
 st.set_page_config(page_title="Outil privé – Codes-barres", layout="wide")
 
-# ================= AUTH =================
+# ================= AUTHENTIFICATION =================
 USERNAME = "11"
 PASSWORD_HASH = hashlib.sha256("11".encode()).hexdigest()
 
@@ -45,6 +41,13 @@ input::placeholder { color:#005baa !important; opacity:0.6; }
 </style>
 """, unsafe_allow_html=True)
 
+# ================= CONFIGURATION GITHUB =================
+GITHUB_USER = "5xng5rttbq-crypto"
+GITHUB_REPO = "Articles-carrefour-"
+GITHUB_FILE = "articles.json"
+GITHUB_BRANCH = "main"
+TOKEN = st.secrets["GITHUB_TOKEN"]
+
 # ================= FONCTIONS =================
 def checksum_ean13(code12):
     total = 0
@@ -74,14 +77,6 @@ def euro_to_francs(e):
 def francs_5_digits(f):
     return f"{int(round(f * 100)):05d}"
 
-# ================= ARTICLES GITHUB =================
-# Modifier ces infos
-GITHUB_USER = "TON_UTILISATEUR"
-GITHUB_REPO = "TON_DEPOT"
-GITHUB_FILE = "articles.json"
-GITHUB_BRANCH = "main"
-TOKEN = st.secrets["GITHUB_TOKEN"]
-
 def github_get_articles():
     url = f"https://api.github.com/repos/{GITHUB_USER}/{GITHUB_REPO}/contents/{GITHUB_FILE}?ref={GITHUB_BRANCH}"
     r = requests.get(url)
@@ -102,7 +97,7 @@ def github_save_articles(data, sha):
     }
     headers = {"Authorization": f"token {TOKEN}"}
     r = requests.put(url, headers=headers, json=payload)
-    return r.status_code == 200
+    return r.status_code in [200,201]
 
 articles, current_sha = github_get_articles()
 
@@ -131,10 +126,11 @@ if st.button("Générer la carte fidélité"):
     if card_code.isdigit():
         barcode = Code128(card_code, writer=ImageWriter())
         buffer = io.BytesIO()
-        barcode.write(buffer, {"write_text": True, "font_size": 7, "text_distance": 3, "module_height": 120})
+        barcode.write(buffer, {"write_text": True, "font_size": 5, "text_distance": 1.5, "module_height": 150})
         buffer.seek(0)
         img = Image.open(buffer)
         w,h = img.size
+        # Garder le bas pour voir le code et chiffres
         left = int(w*0.02); right=int(w*0.98); top=int(h*0.55); bottom=h
         img = img.crop((left,top,right,bottom))
         img = img.resize((int(img.width*0.6), int(img.height*0.6)))
@@ -142,7 +138,7 @@ if st.button("Générer la carte fidélité"):
         img_bytes = io.BytesIO()
         img.save(img_bytes, format="PNG")
         img_bytes = img_bytes.getvalue()
-        st.markdown("<small>Pour imprimer : glisser l'image sur la barre d'adresse ou clic droit → ouvrir dans un nouvel onglet.</small>", unsafe_allow_html=True)
+        st.markdown("<small>Pour imprimer la carte : clic droit → 'Ouvrir l'image dans un nouvel onglet' ou glisser l'image sur la barre d'adresse.</small>", unsafe_allow_html=True)
         st.download_button("💾 Enregistrer l'image", img_bytes, file_name="carte_fidelite.png", mime="image/png")
     else:
         st.error("Le code doit contenir uniquement des chiffres")
@@ -157,10 +153,8 @@ article_prefix = st.text_input("Préfixe article (7 chiffres)")
 if st.button("Enregistrer / Mettre à jour l’article"):
     if article_prefix.isdigit() and len(article_prefix)==7:
         articles[article_name] = article_prefix
-        # Sauvegarde permanente GitHub
         if github_save_articles(articles, current_sha):
-            st.success("Article enregistré (ou remplacé) de manière permanente")
-            # Recharger sha pour prochaines modifications
+            st.success("Article enregistré de manière permanente")
             _, current_sha = github_get_articles()
         else:
             st.error("Erreur lors de la sauvegarde sur GitHub")
