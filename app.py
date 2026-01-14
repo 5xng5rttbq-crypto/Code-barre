@@ -43,7 +43,7 @@ input::placeholder { color:#005baa !important; opacity:0.6; }
 
 # ================= CONFIGURATION GITHUB =================
 GITHUB_USER = "5xng5rttbq-crypto"
-GITHUB_REPO = "Articles-carrefour-"
+GITHUB_REPO = "Code-barre"
 GITHUB_FILE = "articles.json"
 GITHUB_BRANCH = "main"
 TOKEN = st.secrets["GITHUB_TOKEN"]
@@ -79,12 +79,14 @@ def francs_5_digits(f):
 
 def github_get_articles():
     url = f"https://api.github.com/repos/{GITHUB_USER}/{GITHUB_REPO}/contents/{GITHUB_FILE}?ref={GITHUB_BRANCH}"
-    r = requests.get(url)
+    headers = {"Authorization": f"token {TOKEN}"}
+    r = requests.get(url, headers=headers)
     if r.status_code == 200:
         data = r.json()
         content = base64.b64decode(data["content"])
         return json.loads(content), data["sha"]
-    return {}, None
+    else:
+        return {}, None
 
 def github_save_articles(data, sha):
     url = f"https://api.github.com/repos/{GITHUB_USER}/{GITHUB_REPO}/contents/{GITHUB_FILE}"
@@ -130,7 +132,6 @@ if st.button("Générer la carte fidélité"):
         buffer.seek(0)
         img = Image.open(buffer)
         w,h = img.size
-        # Garder le bas pour voir le code et chiffres
         left = int(w*0.02); right=int(w*0.98); top=int(h*0.55); bottom=h
         img = img.crop((left,top,right,bottom))
         img = img.resize((int(img.width*0.6), int(img.height*0.6)))
