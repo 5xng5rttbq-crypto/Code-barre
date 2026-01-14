@@ -25,7 +25,7 @@ if not st.session_state.auth:
     st.title("🔐 Accès privé")
     u = st.text_input("Nom d’utilisateur")
     p = st.text_input("Mot de passe", type="password")
-    if st.button("Connexion"):
+    if st.button("Connexion"):  # ✅ texte corrigé
         if check_login(u, p):
             st.session_state.auth = True
             st.stop()
@@ -61,7 +61,6 @@ def checksum_ean13(code12):
     return (10 - total % 10) % 10
 
 def solve_ean13(code):
-    # Recherche du caractère manquant
     pos = None
     for i, c in enumerate(code):
         if not c.isdigit():
@@ -145,9 +144,9 @@ if st.button("Générer la carte fidélité"):
 
         img.save("card_final.png")
 
-        st.image("card_final.png")
+        # ✅ Lien pour ouvrir dans un nouvel onglet
         st.markdown(
-            '<a href="card_final.png" target="_blank">🖨️ Ouvrir l’image pour impression</a>',
+            '<a href="card_final.png" target="_blank"><img src="card_final.png" width="300"><br>🖨️ Ouvrir l’image pour impression</a>',
             unsafe_allow_html=True
         )
     else:
