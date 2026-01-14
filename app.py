@@ -120,37 +120,29 @@ card_code = st.text_input("Code carte fidélité (chiffres uniquement)")
 
 if st.button("Générer la carte fidélité"):
     if card_code.isdigit():
+        # Générer le code barre en mémoire
         barcode = Code128(card_code, writer=ImageWriter())
-        barcode.save("card_raw", options={
-            "write_text": True,
-            "font_size": 9,
-            "text_distance": 4,
-            "module_height": 120,
-            "quiet_zone": 10
-        })
+        barcode_buffer = io.BytesIO()
+        barcode.write(barcode_buffer, {"write_text": True, "font_size": 9, "text_distance": 4, "module_height": 120})
+        barcode_buffer.seek(0)
 
-        img = Image.open("card_raw.png")
+        img = Image.open(barcode_buffer)
         w, h = img.size
         left = int(w * 0.02)
         right = int(w * 0.98)
         top = int(h * 0.55)
         bottom = h
         img = img.crop((left, top, right, bottom))
-        img = img.resize((int(img.width * 0.6), int(img.height * 0.6)), Image.Resampling.LANCZOS)
+        img = img.resize((int(img.width * 0.6), int(img.height * 0.6)))
 
-        # Affichage normal
         st.image(img)
 
-        # Convertir image en bytes pour base64
+        # Convertir en base64 pour lien cliquable dans un nouvel onglet
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
-        img_bytes = buffered.getvalue()
-        img_b64 = base64.b64encode(img_bytes).decode()
-
-        # Lien HTML pour Chrome : ouvre un vrai nouvel onglet
-        html = f'<a href="data:image/png;base64,{img_b64}" target="_blank" download="carte_fidelite.png">🖨️ Ouvrir l’image pour impression</a>'
-        st.markdown(html, unsafe_allow_html=True)
-
+        img_b64 = base64.b64encode(buffered.getvalue()).decode()
+        html_link = f'<a href="data:image/png;base64,{img_b64}" target="_blank">🖨️ Ouvrir l’image dans un nouvel onglet</a>'
+        st.markdown(html_link, unsafe_allow_html=True)
     else:
         st.error("Le code doit contenir uniquement des chiffres")
 
