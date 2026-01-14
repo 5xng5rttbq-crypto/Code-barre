@@ -4,8 +4,9 @@ from barcode.writer import ImageWriter
 from PIL import Image
 import hashlib
 import io
-import requests
 import json
+import requests
+import base64
 
 # ================= CONFIG =================
 st.set_page_config(page_title="Outil privé – Codes-barres", layout="wide")
@@ -74,27 +75,36 @@ def francs_5_digits(f):
     return f"{int(round(f * 100)):05d}"
 
 # ================= ARTICLES GITHUB =================
-GITHUB_RAW_JSON = "https://raw.githubusercontent.com/TON_UTILISATEUR/TON_DEPOT/main/articles.json"
+# Modifier ces infos
+GITHUB_USER = "TON_UTILISATEUR"
+GITHUB_REPO = "TON_DEPOT"
+GITHUB_FILE = "articles.json"
+GITHUB_BRANCH = "main"
+TOKEN = st.secrets["GITHUB_TOKEN"]
 
-def load_articles():
-    try:
-        r = requests.get(GITHUB_RAW_JSON)
-        if r.status_code == 200:
-            return r.json()
-    except:
-        pass
-    return {}
+def github_get_articles():
+    url = f"https://api.github.com/repos/{GITHUB_USER}/{GITHUB_REPO}/contents/{GITHUB_FILE}?ref={GITHUB_BRANCH}"
+    r = requests.get(url)
+    if r.status_code == 200:
+        data = r.json()
+        content = base64.b64decode(data["content"])
+        return json.loads(content), data["sha"]
+    return {}, None
 
-def save_articles_github(data):
-    """
-    Attention : Pour pousser automatiquement vers GitHub, il faut un token GitHub
-    et utiliser l’API GitHub pour mettre à jour le fichier. 
-    Ici, on montre juste la structure.
-    """
-    # Exemple : POST ou PUT via GitHub API avec token
-    pass
+def github_save_articles(data, sha):
+    url = f"https://api.github.com/repos/{GITHUB_USER}/{GITHUB_REPO}/contents/{GITHUB_FILE}"
+    content = base64.b64encode(json.dumps(data, indent=2, ensure_ascii=False).encode()).decode()
+    payload = {
+        "message": "Mise à jour articles via Streamlit",
+        "content": content,
+        "branch": GITHUB_BRANCH,
+        "sha": sha
+    }
+    headers = {"Authorization": f"token {TOKEN}"}
+    r = requests.put(url, headers=headers, json=payload)
+    return r.status_code == 200
 
-articles = load_articles()
+articles, current_sha = github_get_articles()
 
 # ================= PAGE =================
 st.title("🛒 Outil privé – Codes-barres")
@@ -147,9 +157,13 @@ article_prefix = st.text_input("Préfixe article (7 chiffres)")
 if st.button("Enregistrer / Mettre à jour l’article"):
     if article_prefix.isdigit() and len(article_prefix)==7:
         articles[article_name] = article_prefix
-        # Sauvegarde permanente via GitHub API (à implémenter avec token)
-        save_articles_github(articles)
-        st.success("Article enregistré (ou remplacé)")
+        # Sauvegarde permanente GitHub
+        if github_save_articles(articles, current_sha):
+            st.success("Article enregistré (ou remplacé) de manière permanente")
+            # Recharger sha pour prochaines modifications
+            _, current_sha = github_get_articles()
+        else:
+            st.error("Erreur lors de la sauvegarde sur GitHub")
     else:
         st.error("Le préfixe doit contenir exactement 7 chiffres")
 
