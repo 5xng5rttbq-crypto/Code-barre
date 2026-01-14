@@ -3,13 +3,12 @@ from barcode import EAN13, Code128
 from barcode.writer import ImageWriter
 from PIL import Image
 import hashlib
-import json
-import os
 import io
+import requests
+import json
 
 # ================= CONFIG =================
 st.set_page_config(page_title="Outil privé – Codes-barres", layout="wide")
-ARTICLES_FILE = "articles.json"
 
 # ================= AUTH =================
 USERNAME = "11"
@@ -37,18 +36,10 @@ if not st.session_state.auth:
 st.markdown("""
 <style>
 body, .stApp { background-color: white; color: #005baa; }
-/* Labels, textes et exemples en bleu */
 label, span, p, div, .stNumberInput, .stTextInput, .stTextArea, div[role="radiogroup"] label {
-    color: #005baa !important;
-    font-weight: 500;
+    color: #005baa !important; font-weight: 500;
 }
-/* Champs de saisie */
-input, textarea {
-    background-color: #f2f2f2 !important;
-    color: #005baa !important;
-    border-radius:6px !important;
-}
-/* Placeholder légèrement grisé */
+input, textarea { background-color: #f2f2f2 !important; color: #005baa !important; border-radius:6px !important; }
 input::placeholder { color:#005baa !important; opacity:0.6; }
 </style>
 """, unsafe_allow_html=True)
@@ -82,15 +73,26 @@ def euro_to_francs(e):
 def francs_5_digits(f):
     return f"{int(round(f * 100)):05d}"
 
+# ================= ARTICLES GITHUB =================
+GITHUB_RAW_JSON = "https://raw.githubusercontent.com/TON_UTILISATEUR/TON_DEPOT/main/articles.json"
+
 def load_articles():
-    if os.path.exists(ARTICLES_FILE):
-        with open(ARTICLES_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+    try:
+        r = requests.get(GITHUB_RAW_JSON)
+        if r.status_code == 200:
+            return r.json()
+    except:
+        pass
     return {}
 
-def save_articles(data):
-    with open(ARTICLES_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+def save_articles_github(data):
+    """
+    Attention : Pour pousser automatiquement vers GitHub, il faut un token GitHub
+    et utiliser l’API GitHub pour mettre à jour le fichier. 
+    Ici, on montre juste la structure.
+    """
+    # Exemple : POST ou PUT via GitHub API avec token
+    pass
 
 articles = load_articles()
 
@@ -117,42 +119,21 @@ card_code = st.text_input("Code carte fidélité (chiffres uniquement)")
 
 if st.button("Générer la carte fidélité"):
     if card_code.isdigit():
-        # Génération code barre en mémoire
         barcode = Code128(card_code, writer=ImageWriter())
-        barcode_buffer = io.BytesIO()
-        barcode.write(barcode_buffer, {"write_text": True, "font_size": 7, "text_distance": 3, "module_height": 120})
-        barcode_buffer.seek(0)
-
-        img = Image.open(barcode_buffer)
-        w, h = img.size
-        left = int(w * 0.02)
-        right = int(w * 0.98)
-        top = int(h * 0.55)
-        bottom = h
-        img = img.crop((left, top, right, bottom))
-        img = img.resize((int(img.width * 0.6), int(img.height * 0.6)))
-
-        # Affichage dans l'app
+        buffer = io.BytesIO()
+        barcode.write(buffer, {"write_text": True, "font_size": 7, "text_distance": 3, "module_height": 120})
+        buffer.seek(0)
+        img = Image.open(buffer)
+        w,h = img.size
+        left = int(w*0.02); right=int(w*0.98); top=int(h*0.55); bottom=h
+        img = img.crop((left,top,right,bottom))
+        img = img.resize((int(img.width*0.6), int(img.height*0.6)))
         st.image(img)
-
-        # Convertir en bytes pour téléchargement
         img_bytes = io.BytesIO()
         img.save(img_bytes, format="PNG")
         img_bytes = img_bytes.getvalue()
-
-        # Instruction pour l'impression
-        st.markdown(
-            "<small>Pour imprimer la carte de fidélité : faites glisser l'image sur la barre d'adresse ou clic droit → ouvrir l'image dans un nouvel onglet.</small>",
-            unsafe_allow_html=True
-        )
-
-        # Bouton pour enregistrer l'image
-        st.download_button(
-            label="💾 Enregistrer l'image",
-            data=img_bytes,
-            file_name="carte_fidelite.png",
-            mime="image/png"
-        )
+        st.markdown("<small>Pour imprimer : glisser l'image sur la barre d'adresse ou clic droit → ouvrir dans un nouvel onglet.</small>", unsafe_allow_html=True)
+        st.download_button("💾 Enregistrer l'image", img_bytes, file_name="carte_fidelite.png", mime="image/png")
     else:
         st.error("Le code doit contenir uniquement des chiffres")
 
@@ -164,9 +145,10 @@ article_name = st.text_input("Nom de l’article (ex: raisin)")
 article_prefix = st.text_input("Préfixe article (7 chiffres)")
 
 if st.button("Enregistrer / Mettre à jour l’article"):
-    if article_prefix.isdigit() and len(article_prefix) == 7:
+    if article_prefix.isdigit() and len(article_prefix)==7:
         articles[article_name] = article_prefix
-        save_articles(articles)
+        # Sauvegarde permanente via GitHub API (à implémenter avec token)
+        save_articles_github(articles)
         st.success("Article enregistré (ou remplacé)")
     else:
         st.error("Le préfixe doit contenir exactement 7 chiffres")
@@ -176,15 +158,15 @@ if article_selected:
     article_prefix = articles[article_selected]
 
 mode = st.radio("Méthode de calcul du prix", ["Prix connu", "Poids × prix au kilo"])
-if mode == "Prix connu":
+if mode=="Prix connu":
     price = st.number_input("Prix total (€)", min_value=0.0, step=0.01)
 else:
     weight = st.number_input("Poids (kg)", min_value=0.0, step=0.001)
     price_kg = st.number_input("Prix au kilo (€)", min_value=0.0, step=0.01)
-    price = weight * price_kg
+    price = weight*price_kg
 
 if st.button("Générer le code article au poids"):
-    if article_prefix and price > 0:
+    if article_prefix and price>0:
         francs = euro_to_francs(price)
         base_code = article_prefix + francs_5_digits(francs)
         ean13 = base_code + str(checksum_ean13(base_code))
