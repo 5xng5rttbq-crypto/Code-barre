@@ -106,26 +106,52 @@ card_code = st.text_input("Code carte fidélité (chiffres uniquement)")
 
 if st.button("Générer la carte fidélité"):
     if card_code.isdigit():
-        barcode = Code128(card_code, writer=ImageWriter())
-        barcode.save("temp_card", options={"write_text":True,"font_size":9,"text_distance":4,"module_height":120})
+        # Générer le code barre avec Code128
+        barcode = Code128(
+            card_code,
+            writer=ImageWriter()
+        )
+        barcode_buffer = io.BytesIO()
+        # Réduire légèrement la police pour que les chiffres tiennent
+        barcode.write(
+            barcode_buffer,
+            {"write_text": True, "font_size": 7, "text_distance": 3, "module_height": 120}
+        )
+        barcode_buffer.seek(0)
 
-        img = Image.open("temp_card.png")
-        w,h = img.size
-        left = int(w*0.02)
-        right = int(w*0.98)
-        top = int(h*0.55)
+        # Charger image avec PIL
+        img = Image.open(barcode_buffer)
+        w, h = img.size
+        left = int(w * 0.02)
+        right = int(w * 0.98)
+        top = int(h * 0.55)
         bottom = h
-        img = img.crop((left,top,right,bottom))
-        img = img.resize((int(img.width*0.6), int(img.height*0.6)))
+        img = img.crop((left, top, right, bottom))
+        img = img.resize((int(img.width * 0.6), int(img.height * 0.6)))
 
+        # Afficher l'image dans l'app
         st.image(img)
 
-        # Lien qui ouvre vraiment un nouvel onglet sur Chrome
-        st.markdown('<a href="temp_card.png" target="_blank">🖨️ Ouvrir l’image dans un nouvel onglet</a>', unsafe_allow_html=True)
+        # Convertir image en bytes pour téléchargement
+        img_bytes = io.BytesIO()
+        img.save(img_bytes, format="PNG")
+        img_bytes = img_bytes.getvalue()
+
+        # Petit texte d'instruction pour imprimer
+        st.markdown(
+            "<small>Pour imprimer la carte, vous pouvez faire glisser l'image sur la barre d'adresse ou clic droit → ouvrir dans un nouvel onglet.</small>",
+            unsafe_allow_html=True
+        )
+
+        # Bouton pour enregistrer l'image
+        st.download_button(
+            label="💾 Enregistrer l'image",
+            data=img_bytes,
+            file_name="carte_fidelite.png",
+            mime="image/png"
+        )
     else:
         st.error("Le code doit contenir uniquement des chiffres")
-
-st.divider()
 
 # ----- Articles au poids -----
 st.subheader("⚖️ Articles au poids – EAN13")
