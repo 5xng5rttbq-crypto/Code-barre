@@ -6,7 +6,6 @@ import hashlib
 import json
 import os
 import io
-import base64
 
 # ================= CONFIG =================
 st.set_page_config(page_title="Outil privé – Codes-barres", layout="wide")
@@ -27,7 +26,7 @@ if not st.session_state.auth:
     st.title("🔐 Accès privé")
     u = st.text_input("Nom d’utilisateur")
     p = st.text_input("Mot de passe", type="password")
-    if st.button("Connexion"):  # ✅ texte corrigé
+    if st.button("Connexion"):
         if check_login(u, p):
             st.session_state.auth = True
             st.stop()
@@ -138,17 +137,15 @@ if st.button("Générer la carte fidélité"):
         img = img.crop((left, top, right, bottom))
         img = img.resize((int(img.width * 0.6), int(img.height * 0.6)), Image.Resampling.LANCZOS)
 
-        # Convertir image en base64 pour lien ouvrable
-        buffered = io.BytesIO()
-        img.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue()).decode()
+        # Sauvegarder l'image finale dans le projet
+        img_path = "card_final.png"
+        img.save(img_path)
 
-        # Affichage dans l'app
+        # Affichage normal
         st.image(img)
 
-        # Lien ouvrable dans un nouvel onglet
-        href = f'<a href="data:image/png;base64,{img_str}" target="_blank">🖨️ Ouvrir l’image pour impression</a>'
-        st.markdown(href, unsafe_allow_html=True)
+        # Lien pour ouvrir dans un nouvel onglet
+        st.markdown(f'<a href="{img_path}" target="_blank">🖨️ Ouvrir l’image pour impression</a>', unsafe_allow_html=True)
 
     else:
         st.error("Le code doit contenir uniquement des chiffres")
